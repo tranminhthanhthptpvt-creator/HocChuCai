@@ -136,8 +136,8 @@ body {
   width: 100%;
   max-width: 800px;
   flex: 1;
-  min-height: 380px;
-  margin: 16px 0;
+  min-height: 400px;
+  margin: 14px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -190,7 +190,7 @@ body {
 
 /* Hiển thị chữ cái lớn */
 .letter-display {
-  font-size: 9.5rem;
+  font-size: 9.2rem;
   font-weight: 900;
   letter-spacing: 0.05em;
   line-height: 1.1;
@@ -213,34 +213,78 @@ body {
 
 /* Nhãn phát âm */
 .pronounce-tag {
-  margin-top: 6px;
+  margin-top: 4px;
   background: rgba(250, 204, 21, 0.18);
   border: 1px solid rgba(250, 204, 21, 0.5);
   color: #fef08a;
   font-size: 1.35rem;
   font-weight: 800;
-  padding: 6px 20px;
+  padding: 5px 22px;
   border-radius: 30px;
   letter-spacing: 0.5px;
   box-shadow: 0 4px 12px rgba(250, 204, 21, 0.15);
   transition: transform 0.2s ease;
 }
 
-/* Huy hiệu từ vựng ví dụ */
+/* Chỉ báo trạng thái chờ đọc từ minh họa */
+.pause-indicator {
+  margin-top: 10px;
+  font-size: 0.95rem;
+  color: #38bdf8;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 4px 16px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+  animation: pulse-soft 1.2s infinite ease-in-out;
+  transition: all 0.2s ease;
+}
+
+.pause-indicator.hidden {
+  opacity: 0;
+  visibility: hidden;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+
+.pause-spinner {
+  display: inline-block;
+  animation: spin 2s infinite linear;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Thẻ từ vựng minh họa */
 .word-badge {
   margin-top: 14px;
   display: flex;
   align-items: center;
   gap: 12px;
   background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 10px 24px;
-  border-radius: 20px;
-  font-size: 1.4rem;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  padding: 10px 26px;
+  border-radius: 22px;
+  font-size: 1.45rem;
   font-weight: 700;
   backdrop-filter: blur(10px);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  position: relative;
 }
 
 .word-badge:hover {
@@ -249,21 +293,64 @@ body {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
+/* Hiệu ứng khi từ vựng đang được đọc */
+.word-badge.speaking {
+  background: rgba(236, 72, 153, 0.25);
+  border-color: #facc15;
+  box-shadow: 0 0 30px rgba(250, 204, 21, 0.7);
+  transform: scale(1.08);
+  animation: glow-speaking 0.8s infinite alternate ease-in-out;
+}
+
+@keyframes glow-speaking {
+  from {
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.5);
+    border-color: #facc15;
+  }
+  to {
+    box-shadow: 0 0 35px rgba(244, 114, 182, 0.9);
+    border-color: #f472b6;
+  }
+}
+
 .word-icon {
-  font-size: 1.8rem;
+  font-size: 2rem;
 }
 
 .word-text {
   color: #ffffff;
+  letter-spacing: 0.5px;
 }
 
-/* Nút bấm nghe lại */
+/* Nổi bật chữ cái trong từ vựng */
+.hl-char {
+  color: #fef08a;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.85) 0%, rgba(220, 38, 38, 0.9) 100%);
+  padding: 2px 7px;
+  margin: 0 2px;
+  border-radius: 8px;
+  font-weight: 900;
+  display: inline-block;
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(254, 240, 138, 0.6);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Cụm nút thao tác */
+.action-buttons {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 10;
+}
+
 .speak-btn {
-  margin-top: 18px;
   background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
   color: white;
   border: none;
-  padding: 10px 24px;
+  padding: 10px 22px;
   border-radius: 30px;
   font-size: 1.05rem;
   font-weight: 800;
@@ -274,12 +361,30 @@ body {
   gap: 8px;
   box-shadow: 0 6px 18px rgba(219, 39, 119, 0.35);
   transition: all 0.2s ease;
-  z-index: 10;
 }
 
 .speak-btn:hover {
-  transform: translateY(-2px) scale(1.05);
+  transform: translateY(-2px) scale(1.04);
   box-shadow: 0 8px 24px rgba(219, 39, 119, 0.5);
+}
+
+.speak-word-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f8fafc;
+  padding: 10px 18px;
+  border-radius: 30px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: var(--font-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.speak-word-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: var(--accent-cyan);
+  transform: translateY(-2px);
 }
 
 .speak-icon {
@@ -296,7 +401,8 @@ body {
 
 .instruction em {
   font-style: normal;
-  color: #cbd5e1;
+  color: #facc15;
+  font-weight: 600;
 }
 
 /* Danh sách 29 chữ cái (Alphabet Bar) */
@@ -367,7 +473,7 @@ body {
     font-size: 1.1rem;
   }
   .word-badge {
-    font-size: 1.15rem;
+    font-size: 1.2rem;
     padding: 8px 18px;
   }
   .pronounce-tag {
@@ -383,15 +489,23 @@ body {
 
 @media screen and (max-width: 480px) {
   .letter-display {
-    font-size: 5rem;
+    font-size: 4.8rem;
   }
   .main-card {
-    min-height: 320px;
+    min-height: 340px;
     padding: 16px 8px;
   }
   .nav-arrow {
     width: 36px;
     height: 36px;
+  }
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  .speak-btn, .speak-word-btn {
+    width: 100%;
+    justify-content: center;
   }
   .letter-pill {
     min-width: 28px;

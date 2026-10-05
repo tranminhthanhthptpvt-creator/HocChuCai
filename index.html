@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Bé Học Chữ Cái Tiếng Việt - Phát Âm Chuẩn</title>
+  <title>Bé Học Chữ Cái Tiếng Việt - Phát Âm Chuẩn Kèm Từ Minh Họa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -19,13 +19,26 @@
     </div>
 
     <div class="controls">
-      <!-- Chọn chế độ đọc -->
+      <!-- Chọn cách đọc âm/tên chữ -->
       <div class="control-group">
         <label for="voice-mode" class="control-label">Cách đọc:</label>
         <select id="voice-mode" class="select-btn">
           <option value="phonics" selected>Âm chuẩn (Bờ, Cờ, Dờ...)</option>
-          <option value="name">Tên chữ cái (Bê, Xê, Dê...)</option>
-          <option value="word">Kèm ví dụ (Bờ - Quả bóng...)</option>
+          <option value="name">Tên chữ (Bê, Xê, Dê...)</option>
+        </select>
+      </div>
+
+      <!-- Thời gian ngưng trước khi đọc từ minh họa -->
+      <div class="control-group">
+        <label for="pause-duration" class="control-label">Ngưng đọc từ:</label>
+        <select id="pause-duration" class="select-btn">
+          <option value="1500" selected>1.5 giây (Tự nhiên)</option>
+          <option value="1000">1 giây (Nhanh)</option>
+          <option value="3000">3 giây (Bé suy nghĩ)</option>
+          <option value="5000">5 giây (Đố từ)</option>
+          <option value="30000">30 giây</option>
+          <option value="0">Đọc liền không ngưng</option>
+          <option value="-1">Tắt đọc từ minh họa</option>
         </select>
       </div>
 
@@ -33,7 +46,7 @@
       <div class="control-group">
         <label for="order-mode" class="control-label">Thứ tự:</label>
         <select id="order-mode" class="select-btn">
-          <option value="order">Theo thứ tự (A - Y)</option>
+          <option value="order">Thứ tự (A - Y)</option>
           <option value="random">Ngẫu nhiên (Đố bé)</option>
         </select>
       </div>
@@ -55,19 +68,30 @@
       <div id="letters" class="letter-display active">A a</div>
 
       <!-- Phiên âm phát âm -->
-      <div id="pronounce-tag" class="pronounce-tag">Phát âm: A</div>
+      <div id="pronounce-tag" class="pronounce-tag">Âm: A</div>
 
-      <!-- Từ vựng minh họa -->
-      <div id="word-badge" class="word-badge">
+      <!-- Chỉ báo trạng thái chờ đọc từ minh họa -->
+      <div id="pause-indicator" class="pause-indicator hidden">
+        <span class="pause-spinner">⏳</span>
+        <span id="pause-text">Chuẩn bị đọc từ minh họa...</span>
+      </div>
+
+      <!-- Từ vựng minh họa có làm nổi bật chữ cái trong từ -->
+      <div id="word-badge" class="word-badge" title="Bấm vào để nghe đọc từ minh họa">
         <span id="word-icon" class="word-icon">🐟</span>
         <span id="word-text" class="word-text">Con Cá</span>
       </div>
 
-      <!-- Nút nghe lại to rõ -->
-      <button id="btn-speak" class="speak-btn">
-        <span class="speak-icon">🔊</span>
-        <span>Nghe phát âm</span>
-      </button>
+      <!-- Nút thao tác nghe lại -->
+      <div class="action-buttons">
+        <button id="btn-speak" class="speak-btn">
+          <span class="speak-icon">🔊</span>
+          <span>Nghe lại âm & từ</span>
+        </button>
+        <button id="btn-speak-word" class="speak-word-btn" title="Chỉ nghe từ minh họa">
+          <span>🎧 Nghe riêng từ</span>
+        </button>
+      </div>
     </div>
 
     <button id="btn-next" class="nav-arrow nav-next" title="Chữ tiếp theo" aria-label="Chữ tiếp theo">❯</button>
@@ -75,7 +99,7 @@
 
   <!-- Hướng dẫn nhanh -->
   <div class="instruction">
-    👉 <em>Chạm vào màn hình hoặc bấm phím bất kỳ để chuyển chữ & nghe phát âm!</em>
+    💡 <em>Quy trình: Đọc âm (ví dụ: "Bờ") ➔ Tạm dừng một nhịp ➔ Đọc từ minh họa (ví dụ: "Quả bóng").</em>
   </div>
 
   <!-- Danh sách 29 chữ cái (bấm để nhảy tới chữ) -->
