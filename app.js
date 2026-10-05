@@ -34,95 +34,109 @@ const VIETNAMESE_ALPHABET = [
 let currentIndex = 0;
 let remainingIndices = [];
 let soundEnabled = true;
-let isSpeaking = false;
-let audioCtx = null;
+let currentAudio = null;
+let wordTimeout = null;
 
-// Khởi tạo Audio Context cho hiệu ứng âm thanh pop/chime
-function getAudioContext() {
-  if (!audioCtx) {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (AudioContextClass) {
-      audioCtx = new AudioContextClass();
-    }
+// Dừng âm thanh hiện tại nếu đang phát
+function stopCurrentAudio() {
+  if (wordTimeout) {
+    clearTimeout(wordTimeout);
+    wordTimeout = null;
   }
-  if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume();
+  if (currentAudio) {
+    try {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    } catch (e) {}
+    currentAudio = null;
   }
-  return audioCtx;
 }
 
-// Phát âm thanh chime vui tai khi đổi chữ
-function playChimeSound() {
+// Phát file âm thanh MP3 với dự phòng tự động
+function playAudioFile(src, onEnded = null, fallbackText = '') {
   if (!soundEnabled) return;
-  try {
-    const ctx = getAudioContext();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12); // A5
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.25);
-  } catch (e) {
-    // Bỏ qua nếu trình duyệt chặn Web Audio
-  }
-}
+  stopCurrentAudio();
 
-// Tìm giọng đọc tiếng Việt tối ưu nhất
-let viVoice = null;
-function loadVoices() {
-  if (!('speechSynthesis' in window)) return;
-  const voices = window.speechSynthesis.getVoices();
-  viVoice = voices.find(v => v.lang.toLowerCase().replace('_', '-').includes('vi-vn') || v.lang.toLowerCase().startsWith('vi')) || null;
-}
+  const audio = new Audio(src);
+  currentAudio = audio;
 
-if ('speechSynthesis' in window) {
-  window.speechSynthesis.onvoiceschanged = loadVoices;
-  loadVoices();
-}
-
-// Phát âm tiếng Việt chuẩn bằng Web Speech API
-function speak(text) {
-  if (!soundEnabled || !('speechSynthesis' in window)) return;
-
-  try {
-    window.speechSynthesis.cancel(); // Hủy câu đang đọc dở nếu có
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'vi-VN';
-    utterance.rate = 0.85; // Tốc độ vừa phải, rõ ràng cho trẻ em
-    utterance.pitch = 1.05; // Cao độ nhẹ nhàng, ấm áp
-
-    if (viVoice) {
-      utterance.voice = viVoice;
+  audio.onended = () => {
+    if (currentAudio === audio) {
+      currentAudio = null;
     }
+    if (onEnded) onEnded();
+  };
 
-    isSpeaking = true;
-    utterance.onend = () => { isSpeaking = false; };
-    utterance.onerror = () => { isSpeaking = false; };
+  audio.onerror = () => {
+    // Dự phòng 1: Nếu file cục bộ lỗi, thử gọi trực tiếp link Google TTS
+    if (fallbackText) {
+      playOnlineTTS(fallbackText, onEnded);
+    }
+  };
 
-    window.speechSynthesis.speak(utterance);
-  } catch (err) {
-    console.warn('Lỗi SpeechSynthesis:', err);
+  const playPromise = audio.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(err => {
+      console.warn("Trình duyệt tạm dừng autoplay, cần tương tác người dùng:", err);
+      if (fallbackText) {
+        speakViaSpeechSynthesis(fallbackText);
+      }
+    });
   }
 }
 
-// Lấy nội dung phát âm theo chế độ đã chọn
-function getSpokenText(item) {
+// Dự phòng trực tuyến qua Google TTS
+function playOnlineTTS(text, onEnded = null) {
+  if (!soundEnabled) return;
+  const encoded = encodeURIComponent(text);
+  const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encoded}`;
+  
+  const audio = new Audio(url);
+  currentAudio = audio;
+  audio.onended = () => {
+    if (currentAudio === audio) currentAudio = null;
+    if (onEnded) onEnded();
+  };
+  audio.onerror = () => {
+    speakViaSpeechSynthesis(text);
+  };
+  audio.play().catch(() => {
+    speakViaSpeechSynthesis(text);
+  });
+}
+
+// Dự phòng cuối cùng bằng Web Speech API nếu offline hoàn toàn và không có file
+function speakViaSpeechSynthesis(text) {
+  if (!soundEnabled || !('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'vi-VN';
+    u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+// Phát âm thanh của chữ cái theo chế độ được chọn
+function playLetterAudio(index) {
+  if (!soundEnabled) return;
+  const item = VIETNAMESE_ALPHABET[index];
   const mode = document.getElementById('voice-mode').value;
+
   if (mode === 'phonics') {
-    return item.phonics;
+    // Phát âm đánh vần: A, Ă, Â, Bờ, Cờ...
+    playAudioFile(`audio/phonics/${index}.mp3`, null, item.phonics);
   } else if (mode === 'name') {
-    return item.name;
+    // Phát âm tên chữ: Bê, Xê, Dê, Đê...
+    playAudioFile(`audio/names/${index}.mp3`, null, item.name);
   } else if (mode === 'word') {
-    return `${item.phonics}. ${item.word}`;
+    // Phát âm chữ trước, sau đó phát âm từ vựng ví dụ
+    playAudioFile(`audio/phonics/${index}.mp3`, () => {
+      wordTimeout = setTimeout(() => {
+        playAudioFile(`audio/words/${index}.mp3`, null, item.word);
+      }, 250);
+    }, item.phonics);
   }
-  return item.phonics;
 }
 
 // Cập nhật giao diện chữ cái
@@ -132,7 +146,6 @@ function renderLetter(index, shouldSpeak = true) {
 
   const letterEl = document.getElementById('letters');
   const tagEl = document.getElementById('pronounce-tag');
-  const wordBadge = document.getElementById('word-badge');
   const wordIcon = document.getElementById('word-icon');
   const wordText = document.getElementById('word-text');
 
@@ -160,14 +173,10 @@ function renderLetter(index, shouldSpeak = true) {
     // Cập nhật thanh danh sách 29 chữ cái
     updateAlphabetPills();
 
-    playChimeSound();
-
     if (shouldSpeak) {
-      setTimeout(() => {
-        speak(getSpokenText(item));
-      }, 80);
+      playLetterAudio(index);
     }
-  }, 120);
+  }, 100);
 }
 
 // Chuyển tới chữ cái tiếp theo
@@ -176,22 +185,21 @@ function nextLetter() {
 
   if (orderMode === 'random') {
     if (remainingIndices.length === 0) {
-      // Làm mới danh sách ngẫu nhiên
       remainingIndices = VIETNAMESE_ALPHABET.map((_, i) => i).filter(i => i !== currentIndex);
       shuffleArray(remainingIndices);
     }
     const nextIdx = remainingIndices.pop();
-    renderLetter(nextIdx);
+    renderLetter(nextIdx, true);
   } else {
     const nextIdx = (currentIndex + 1) % VIETNAMESE_ALPHABET.length;
-    renderLetter(nextIdx);
+    renderLetter(nextIdx, true);
   }
 }
 
 // Lùi về chữ cái trước đó
 function prevLetter() {
   const prevIdx = (currentIndex - 1 + VIETNAMESE_ALPHABET.length) % VIETNAMESE_ALPHABET.length;
-  renderLetter(prevIdx);
+  renderLetter(prevIdx, true);
 }
 
 // Xáo trộn mảng
@@ -202,7 +210,7 @@ function shuffleArray(arr) {
   }
 }
 
-// Render thanh 29 chữ cái ở cuối trang
+// Khởi tạo thanh 29 chữ cái
 function initAlphabetGrid() {
   const grid = document.getElementById('alphabet-grid');
   grid.innerHTML = '';
@@ -238,7 +246,7 @@ function updateAlphabetPills() {
 // Thiết lập các sự kiện tương tác
 document.addEventListener('DOMContentLoaded', () => {
   initAlphabetGrid();
-  renderLetter(0, false); // Hiển thị chữ A đầu tiên mà không tự phát trước khi người dùng tương tác
+  renderLetter(0, false); // Hiển thị chữ A đầu tiên
 
   const mainArea = document.getElementById('main-area');
   const btnPrev = document.getElementById('btn-prev');
@@ -250,7 +258,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Chạm vào vùng chính để chuyển chữ tiếp theo & phát âm
   mainArea.addEventListener('click', (e) => {
-    // Không chuyển nếu bấm trúng nút mũi tên, nút nghe lại hoặc từ vựng
     if (e.target.closest('#btn-prev') || e.target.closest('#btn-next') || e.target.closest('#btn-speak') || e.target.closest('#word-badge')) {
       return;
     }
@@ -271,16 +278,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Nút nghe lại
   btnSpeak.addEventListener('click', (e) => {
     e.stopPropagation();
-    playChimeSound();
-    speak(getSpokenText(VIETNAMESE_ALPHABET[currentIndex]));
+    playLetterAudio(currentIndex);
   });
 
-  // Bấm vào huy hiệu từ vựng để đọc từ minh họa
+  // Bấm vào từ vựng để nghe phát âm từ đó
   wordBadge.addEventListener('click', (e) => {
     e.stopPropagation();
     const item = VIETNAMESE_ALPHABET[currentIndex];
-    playChimeSound();
-    speak(`${item.word}`);
+    playAudioFile(`audio/words/${currentIndex}.mp3`, null, item.word);
   });
 
   // Bật/Tắt âm thanh
@@ -291,16 +296,16 @@ document.addEventListener('DOMContentLoaded', () => {
       btnSound.classList.remove('muted');
       btnSound.querySelector('.btn-icon').textContent = '🔊';
       btnSound.querySelector('.btn-text').textContent = 'Bật tiếng';
-      speak('Bật âm thanh');
+      playLetterAudio(currentIndex);
     } else {
       btnSound.classList.add('muted');
       btnSound.querySelector('.btn-icon').textContent = '🔇';
       btnSound.querySelector('.btn-text').textContent = 'Tắt tiếng';
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      stopCurrentAudio();
     }
   });
 
-  // Khi thay đổi chế độ phát âm
+  // Thay đổi chế độ đọc
   voiceMode.addEventListener('change', () => {
     const item = VIETNAMESE_ALPHABET[currentIndex];
     const mode = voiceMode.value;
@@ -308,10 +313,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mode === 'name') label = 'Tên chữ: ' + item.name;
     else if (mode === 'word') label = `${item.phonics} - ${item.word}`;
     document.getElementById('pronounce-tag').textContent = label;
-    speak(getSpokenText(item));
+    playLetterAudio(currentIndex);
   });
 
-  // Hỗ trợ phím bàn phím
+  // Phím tắt bàn phím
   document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'SELECT') return;
 
@@ -323,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
       prevLetter();
     } else if (e.key.toLowerCase() === 'r') {
       e.preventDefault();
-      speak(getSpokenText(VIETNAMESE_ALPHABET[currentIndex]));
+      playLetterAudio(currentIndex);
     }
   });
 });
