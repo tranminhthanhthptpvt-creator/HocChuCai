@@ -1,24 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-
-	<title>Alphabet</title>
-
-	<link href="style.css" rel="stylesheet" type="text/css" charset="utf-8" />
-
-	<script src="jquery.min.js" type="text/javascript" charset="utf-8"></script>
-	<script>window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"><\/script>')</script>
-	<script src="app.js" type="text/javascript" charset="utf-8"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Bé Học Chữ Cái Tiếng Việt - Phát Âm Chuẩn</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
-
 <body>
 
-<section id="page">
-	<div id="foo"></div>
-	<div id="letters"></div>
-</section>
+  <!-- Thanh điều khiển trên cùng -->
+  <header class="top-bar">
+    <div class="logo">
+      <span class="logo-icon">🔤</span>
+      <span class="logo-text">Bé Học Chữ Cái</span>
+    </div>
 
+    <div class="controls">
+      <!-- Chọn chế độ đọc -->
+      <div class="control-group">
+        <label for="voice-mode" class="control-label">Cách đọc:</label>
+        <select id="voice-mode" class="select-btn">
+          <option value="phonics" selected>Âm chuẩn (Bờ, Cờ, Dờ...)</option>
+          <option value="name">Tên chữ cái (Bê, Xê, Dê...)</option>
+          <option value="word">Kèm ví dụ (Bờ - Quả bóng...)</option>
+        </select>
+      </div>
+
+      <!-- Chọn thứ tự -->
+      <div class="control-group">
+        <label for="order-mode" class="control-label">Thứ tự:</label>
+        <select id="order-mode" class="select-btn">
+          <option value="order">Theo thứ tự (A - Y)</option>
+          <option value="random">Ngẫu nhiên (Đố bé)</option>
+        </select>
+      </div>
+
+      <!-- Bật/Tắt âm thanh -->
+      <button id="btn-sound" class="btn-toggle" title="Bật/Tắt âm thanh">
+        <span class="btn-icon">🔊</span>
+        <span class="btn-text">Bật tiếng</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Vùng hiển thị chữ cái chính (Click để chuyển chữ) -->
+  <main id="main-area" class="main-card">
+    <button id="btn-prev" class="nav-arrow nav-prev" title="Chữ trước" aria-label="Chữ trước">❮</button>
+
+    <div id="content-display" class="content-display">
+      <!-- Chữ cái lớn -->
+      <div id="letters" class="letter-display active">A a</div>
+
+      <!-- Phiên âm phát âm -->
+      <div id="pronounce-tag" class="pronounce-tag">Phát âm: A</div>
+
+      <!-- Từ vựng minh họa -->
+      <div id="word-badge" class="word-badge">
+        <span id="word-icon" class="word-icon">🐟</span>
+        <span id="word-text" class="word-text">Con Cá</span>
+      </div>
+
+      <!-- Nút nghe lại to rõ -->
+      <button id="btn-speak" class="speak-btn">
+        <span class="speak-icon">🔊</span>
+        <span>Nghe phát âm</span>
+      </button>
+    </div>
+
+    <button id="btn-next" class="nav-arrow nav-next" title="Chữ tiếp theo" aria-label="Chữ tiếp theo">❯</button>
+  </main>
+
+  <!-- Hướng dẫn nhanh -->
+  <div class="instruction">
+    👉 <em>Chạm vào màn hình hoặc bấm phím bất kỳ để chuyển chữ & nghe phát âm!</em>
+  </div>
+
+  <!-- Danh sách 29 chữ cái (bấm để nhảy tới chữ) -->
+  <footer class="alphabet-nav">
+    <div id="alphabet-grid" class="alphabet-grid">
+      <!-- Render bằng JavaScript -->
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
 </body>
 </html>
