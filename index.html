@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Bé Học Chữ Cái Tiếng Việt - Phát Âm Chuẩn Kèm Từ Minh Họa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +11,7 @@
 </head>
 <body>
 
-  <!-- Thanh điều khiển trên cùng -->
+  <!-- Thanh điều khiển trên cùng (Tối ưu gọn gàng cho điện thoại) -->
   <header class="top-bar">
     <div class="logo">
       <span class="logo-icon">🔤</span>
@@ -19,90 +19,64 @@
     </div>
 
     <div class="controls">
-      <!-- Chọn cách đọc âm/tên chữ -->
-      <div class="control-group">
-        <label for="voice-mode" class="control-label">Cách đọc:</label>
-        <select id="voice-mode" class="select-btn">
-          <option value="phonics" selected>Âm chuẩn (Bờ, Cờ, Dờ...)</option>
-          <option value="name">Tên chữ (Bê, Xê, Dê...)</option>
-        </select>
-      </div>
-
-      <!-- Thời gian ngưng trước khi đọc từ minh họa -->
-      <div class="control-group">
-        <label for="pause-duration" class="control-label">Ngưng đọc từ:</label>
-        <select id="pause-duration" class="select-btn">
-          <option value="1500" selected>1.5 giây (Tự nhiên)</option>
-          <option value="1000">1 giây (Nhanh)</option>
-          <option value="3000">3 giây (Bé suy nghĩ)</option>
-          <option value="5000">5 giây (Đố từ)</option>
-          <option value="30000">30 giây</option>
-          <option value="0">Đọc liền không ngưng</option>
-          <option value="-1">Tắt đọc từ minh họa</option>
-        </select>
-      </div>
+      <!-- Chọn cách đọc âm / tên chữ -->
+      <select id="voice-mode" class="select-btn" aria-label="Cách đọc">
+        <option value="phonics" selected>Âm chuẩn (Bờ, Cờ...)</option>
+        <option value="name">Tên chữ (Bê, Xê...)</option>
+      </select>
 
       <!-- Chọn thứ tự -->
-      <div class="control-group">
-        <label for="order-mode" class="control-label">Thứ tự:</label>
-        <select id="order-mode" class="select-btn">
-          <option value="order">Thứ tự (A - Y)</option>
-          <option value="random">Ngẫu nhiên (Đố bé)</option>
-        </select>
-      </div>
+      <select id="order-mode" class="select-btn" aria-label="Thứ tự">
+        <option value="order">A ➔ Y</option>
+        <option value="random">Đố bé 🔀</option>
+      </select>
 
       <!-- Bật/Tắt âm thanh -->
-      <button id="btn-sound" class="btn-toggle" title="Bật/Tắt âm thanh">
+      <button id="btn-sound" class="btn-toggle" title="Bật/Tắt âm thanh" aria-label="Bật/Tắt âm thanh">
         <span class="btn-icon">🔊</span>
-        <span class="btn-text">Bật tiếng</span>
       </button>
     </div>
   </header>
 
-  <!-- Vùng hiển thị chữ cái chính (Click để chuyển chữ) -->
+  <!-- Vùng hiển thị thẻ học chính -->
   <main id="main-area" class="main-card">
+    <!-- Nút lùi -->
     <button id="btn-prev" class="nav-arrow nav-prev" title="Chữ trước" aria-label="Chữ trước">❮</button>
 
     <div id="content-display" class="content-display">
-      <!-- Chữ cái lớn -->
+      <!-- Cặp chữ cái lớn -->
       <div id="letters" class="letter-display active">A a</div>
 
-      <!-- Phiên âm phát âm -->
+      <!-- Nhãn phiên âm gọn gàng -->
       <div id="pronounce-tag" class="pronounce-tag">Âm: A</div>
 
-      <!-- Chỉ báo trạng thái chờ đọc từ minh họa -->
-      <div id="pause-indicator" class="pause-indicator hidden">
-        <span class="pause-spinner">⏳</span>
-        <span id="pause-text">Chuẩn bị đọc từ minh họa...</span>
+      <!-- Thẻ từ vựng minh họa với hình ảnh to rõ cho bé dễ nhìn -->
+      <div id="word-card" class="word-card" title="Chạm vào để nghe từ minh họa">
+        <div class="word-icon-container">
+          <span id="word-icon" class="word-icon">🐟</span>
+        </div>
+        <div id="word-text" class="word-text">Con C<span class="hl-char">á</span></div>
       </div>
 
-      <!-- Từ vựng minh họa có làm nổi bật chữ cái trong từ -->
-      <div id="word-badge" class="word-badge" title="Bấm vào để nghe đọc từ minh họa">
-        <span id="word-icon" class="word-icon">🐟</span>
-        <span id="word-text" class="word-text">Con Cá</span>
-      </div>
-
-      <!-- Nút thao tác nghe lại -->
+      <!-- Nút phát âm lại -->
       <div class="action-buttons">
         <button id="btn-speak" class="speak-btn">
           <span class="speak-icon">🔊</span>
-          <span>Nghe lại âm & từ</span>
-        </button>
-        <button id="btn-speak-word" class="speak-word-btn" title="Chỉ nghe từ minh họa">
-          <span>🎧 Nghe riêng từ</span>
+          <span>Nghe lại</span>
         </button>
       </div>
     </div>
 
+    <!-- Nút tiến -->
     <button id="btn-next" class="nav-arrow nav-next" title="Chữ tiếp theo" aria-label="Chữ tiếp theo">❯</button>
   </main>
 
-  <!-- Hướng dẫn nhanh -->
+  <!-- Hướng dẫn ngắn gọn -->
   <div class="instruction">
-    💡 <em>Quy trình: Đọc âm (ví dụ: "Bờ") ➔ Tạm dừng một nhịp ➔ Đọc từ minh họa (ví dụ: "Quả bóng").</em>
+    👉 <em>Chạm vào màn hình để sang chữ mới. Chạm vào hình để nghe từ minh họa!</em>
   </div>
 
-  <!-- Danh sách 29 chữ cái (bấm để nhảy tới chữ) -->
+  <!-- Thanh 29 chữ cái cuộn ngang mượt mà trên điện thoại -->
   <footer class="alphabet-nav">
     <div id="alphabet-grid" class="alphabet-grid">
       <!-- Render bằng JavaScript -->

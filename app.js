@@ -31,12 +31,14 @@ const VIETNAMESE_ALPHABET = [
   { char: 'Y y', letter: 'Y', phonics: 'I', name: 'I dài', word: 'Y Tá', wordHtml: '<span class="hl-char">Y</span> Tá', icon: '👩‍⚕️', color: '#a855f7' }
 ];
 
+// Thời gian ngưng cố định là 2 giây (2000ms) theo yêu cầu
+const PAUSE_DURATION_MS = 2000;
+
 let currentIndex = 0;
 let remainingIndices = [];
 let soundEnabled = true;
 let currentAudio = null;
 let pauseTimer = null;
-let countdownInterval = null;
 
 // Dừng hoàn toàn âm thanh và bộ đếm thời gian đang chạy
 function stopAllAudio() {
@@ -44,12 +46,7 @@ function stopAllAudio() {
     clearTimeout(pauseTimer);
     pauseTimer = null;
   }
-  if (countdownInterval) {
-    clearInterval(countdownInterval);
-    countdownInterval = null;
-  }
-  hidePauseIndicator();
-  setWordBadgeSpeaking(false);
+  setWordCardSpeaking(false);
 
   if (currentAudio) {
     try {
@@ -60,29 +57,12 @@ function stopAllAudio() {
   }
 }
 
-// Bật/tắt hiệu ứng đang phát âm từ vựng
-function setWordBadgeSpeaking(isSpeaking) {
-  const badge = document.getElementById('word-badge');
-  if (badge) {
-    if (isSpeaking) badge.classList.add('speaking');
-    else badge.classList.remove('speaking');
-  }
-}
-
-// Hiển thị/ẩn trạng thái đếm ngược khoảng ngưng
-function showPauseIndicator(secondsLeft) {
-  const indicator = document.getElementById('pause-indicator');
-  const textEl = document.getElementById('pause-text');
-  if (indicator && textEl) {
-    indicator.classList.remove('hidden');
-    textEl.textContent = `⏳ Đang ngưng ${secondsLeft}s ➔ Chuẩn bị đọc từ minh họa...`;
-  }
-}
-
-function hidePauseIndicator() {
-  const indicator = document.getElementById('pause-indicator');
-  if (indicator) {
-    indicator.classList.add('hidden');
+// Bật/tắt hiệu ứng nổi bật khi từ vựng đang được đọc
+function setWordCardSpeaking(isSpeaking) {
+  const card = document.getElementById('word-card');
+  if (card) {
+    if (isSpeaking) card.classList.add('speaking');
+    else card.classList.remove('speaking');
   }
 }
 
@@ -126,7 +106,7 @@ function playOnlineTTS(text, onEnded = null) {
   if (!soundEnabled) return;
   const encoded = encodeURIComponent(text);
   const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encoded}`;
-  
+
   const audio = new Audio(url);
   currentAudio = audio;
   audio.onended = () => {
@@ -155,70 +135,41 @@ function speakViaSpeechSynthesis(text) {
   } catch (e) {}
 }
 
-// Phát âm từ minh họa đơn lẻ
+// Phát âm riêng từ minh họa
 function playWordOnly(index) {
   if (!soundEnabled) return;
   stopAllAudio();
   const item = VIETNAMESE_ALPHABET[index];
-  setWordBadgeSpeaking(true);
+  setWordCardSpeaking(true);
 
   playAudioFile(`audio/words/${index}.mp3`, () => {
-    setWordBadgeSpeaking(false);
+    setWordCardSpeaking(false);
   }, item.word);
 }
 
-// Quy trình phát âm chuẩn sư phạm: Đọc Âm ➔ Ngưng một khoảng ➔ Đọc Từ minh họa
+// Quy trình phát âm chuẩn:
+// Đọc Âm (Bờ) ➔ Im lặng ngưng đúng 2 giây (không hiện chữ làm bé phân tâm) ➔ Đọc Từ minh họa (Quả bóng)
 function playLetterSequence(index) {
   if (!soundEnabled) return;
   stopAllAudio();
 
   const item = VIETNAMESE_ALPHABET[index];
   const voiceMode = document.getElementById('voice-mode').value;
-  const pauseDuration = parseInt(document.getElementById('pause-duration').value, 10);
 
-  // Xác định file âm thanh chữ (âm đánh vần hay tên chữ)
   const letterAudioSrc = (voiceMode === 'name') ? `audio/names/${index}.mp3` : `audio/phonics/${index}.mp3`;
   const fallbackLetterText = (voiceMode === 'name') ? item.name : item.phonics;
 
   // Bước 1: Phát âm chữ cái
   playAudioFile(letterAudioSrc, () => {
-    // Nếu người dùng tắt đọc từ minh họa
-    if (pauseDuration === -1) {
-      return;
-    }
-
-    // Nếu đọc liền không ngưng (0ms)
-    if (pauseDuration === 0) {
-      setWordBadgeSpeaking(true);
-      playAudioFile(`audio/words/${index}.mp3`, () => {
-        setWordBadgeSpeaking(false);
-      }, item.word);
-      return;
-    }
-
-    // Bước 2: Bắt đầu khoảng ngưng đếm ngược
-    let secondsLeft = Math.ceil(pauseDuration / 1000);
-    showPauseIndicator(secondsLeft);
-
-    countdownInterval = setInterval(() => {
-      secondsLeft -= 1;
-      if (secondsLeft > 0) {
-        showPauseIndicator(secondsLeft);
-      } else {
-        clearInterval(countdownInterval);
-        countdownInterval = null;
-      }
-    }, 1000);
-
-    // Bước 3: Sau khoảng ngưng, phát âm từ vựng minh họa
+    // Bước 2: Tự động ngưng 2 giây trong im lặng hoàn toàn (không hiện thông báo chữ)
     pauseTimer = setTimeout(() => {
-      hidePauseIndicator();
-      setWordBadgeSpeaking(true);
+      // Bước 3: Sau 2 giây, phát sáng thẻ từ minh họa và đọc to từ vựng
+      setWordCardSpeaking(true);
 
       playAudioFile(`audio/words/${index}.mp3`, () => {
-        setWordBadgeSpeaking(false);
+        setWordCardSpeaking(false);
       }, item.word);
-    }, pauseDuration);
+    }, PAUSE_DURATION_MS);
 
   }, fallbackLetterText);
 }
@@ -240,14 +191,13 @@ function renderLetter(index, shouldSpeak = true) {
   setTimeout(() => {
     letterEl.textContent = item.char;
     letterEl.style.color = item.color;
-    letterEl.style.textShadow = `0 8px 32px rgba(0,0,0,0.5), 0 0 50px ${item.color}66`;
+    letterEl.style.textShadow = `0 6px 28px rgba(0,0,0,0.5), 0 0 45px ${item.color}66`;
 
     const voiceMode = document.getElementById('voice-mode').value;
-    let label = (voiceMode === 'name') ? `Tên chữ: ${item.name}` : `Âm: ${item.phonics}`;
+    let label = (voiceMode === 'name') ? `Tên: ${item.name}` : `Âm: ${item.phonics}`;
     tagEl.textContent = label;
 
     wordIcon.textContent = item.icon;
-    // Chèn HTML có highlight chữ cái trong từ
     wordText.innerHTML = item.wordHtml;
 
     letterEl.classList.remove('inactive');
@@ -258,7 +208,7 @@ function renderLetter(index, shouldSpeak = true) {
     if (shouldSpeak) {
       playLetterSequence(index);
     }
-  }, 100);
+  }, 90);
 }
 
 // Chuyển tới chữ cái tiếp theo
@@ -319,6 +269,8 @@ function updateAlphabetPills() {
   document.querySelectorAll('.letter-pill').forEach((pill, idx) => {
     if (idx === currentIndex) {
       pill.classList.add('active');
+      // Cuộn chữ đang chọn vào chính giữa thanh cuộn trên điện thoại
+      pill.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     } else {
       pill.classList.remove('active');
     }
@@ -334,23 +286,42 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnPrev = document.getElementById('btn-prev');
   const btnNext = document.getElementById('btn-next');
   const btnSpeak = document.getElementById('btn-speak');
-  const btnSpeakWord = document.getElementById('btn-speak-word');
   const btnSound = document.getElementById('btn-sound');
-  const wordBadge = document.getElementById('word-badge');
+  const wordCard = document.getElementById('word-card');
   const voiceMode = document.getElementById('voice-mode');
-  const pauseDuration = document.getElementById('pause-duration');
 
-  // Chạm vào vùng chính để chuyển chữ tiếp theo & phát âm quy trình
+  // Chạm vào vùng chính để chuyển chữ tiếp theo & phát âm
   mainArea.addEventListener('click', (e) => {
     if (e.target.closest('#btn-prev') || 
         e.target.closest('#btn-next') || 
         e.target.closest('#btn-speak') || 
-        e.target.closest('#btn-speak-word') || 
-        e.target.closest('#word-badge')) {
+        e.target.closest('#word-card')) {
       return;
     }
     nextLetter();
   });
+
+  // Hỗ trợ cử chỉ vuốt (Swipe) trên điện thoại cảm ứng
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  mainArea.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  mainArea.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    const diff = touchEndX - touchStartX;
+    if (Math.abs(diff) > 45) {
+      if (diff < 0) {
+        // Vuốt sang trái ➔ Chữ tiếp theo
+        nextLetter();
+      } else {
+        // Vuốt sang phải ➔ Chữ trước đó
+        prevLetter();
+      }
+    }
+  }, { passive: true });
 
   // Nút lùi / tiến
   btnPrev.addEventListener('click', (e) => {
@@ -363,20 +334,14 @@ document.addEventListener('DOMContentLoaded', () => {
     nextLetter();
   });
 
-  // Nút nghe lại cả quy trình (Âm -> Ngưng -> Từ)
+  // Nút nghe lại cả quy trình (Âm ➔ Ngưng 2s ➔ Từ minh họa)
   btnSpeak.addEventListener('click', (e) => {
     e.stopPropagation();
     playLetterSequence(currentIndex);
   });
 
-  // Nút nghe riêng từ minh họa
-  btnSpeakWord.addEventListener('click', (e) => {
-    e.stopPropagation();
-    playWordOnly(currentIndex);
-  });
-
-  // Bấm trực tiếp vào thẻ từ vựng để nghe đọc từ minh họa ngay lập tức
-  wordBadge.addEventListener('click', (e) => {
+  // Chạm trực tiếp vào hình minh họa hoặc từ để nghe đọc từ ngay lập tức
+  wordCard.addEventListener('click', (e) => {
     e.stopPropagation();
     playWordOnly(currentIndex);
   });
@@ -388,12 +353,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (soundEnabled) {
       btnSound.classList.remove('muted');
       btnSound.querySelector('.btn-icon').textContent = '🔊';
-      btnSound.querySelector('.btn-text').textContent = 'Bật tiếng';
       playLetterSequence(currentIndex);
     } else {
       btnSound.classList.add('muted');
       btnSound.querySelector('.btn-icon').textContent = '🔇';
-      btnSound.querySelector('.btn-text').textContent = 'Tắt tiếng';
       stopAllAudio();
     }
   });
@@ -402,13 +365,8 @@ document.addEventListener('DOMContentLoaded', () => {
   voiceMode.addEventListener('change', () => {
     const item = VIETNAMESE_ALPHABET[currentIndex];
     const mode = voiceMode.value;
-    let label = (mode === 'name') ? `Tên chữ: ${item.name}` : `Âm: ${item.phonics}`;
+    let label = (mode === 'name') ? `Tên: ${item.name}` : `Âm: ${item.phonics}`;
     document.getElementById('pronounce-tag').textContent = label;
-    playLetterSequence(currentIndex);
-  });
-
-  // Thay đổi thời gian ngưng
-  pauseDuration.addEventListener('change', () => {
     playLetterSequence(currentIndex);
   });
 
