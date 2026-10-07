@@ -31,8 +31,8 @@ const VIETNAMESE_ALPHABET = [
   { char: 'Y y', letter: 'Y', phonics: 'I', name: 'I dài', word: 'Y Tá', wordHtml: '<span class="hl-char">Y</span> Tá', icon: '👩‍⚕️', color: '#a855f7' }
 ];
 
-// Thời gian ngưng cố định là 2 giây (2000ms) theo yêu cầu
-const PAUSE_DURATION_MS = 2000;
+// Thời gian ngưng đúng 1 giây (1000ms) theo yêu cầu cải tiến
+const PAUSE_DURATION_MS = 1000;
 
 let currentIndex = 0;
 let remainingIndices = [];
@@ -147,8 +147,10 @@ function playWordOnly(index) {
   }, item.word);
 }
 
-// Quy trình phát âm chuẩn:
-// Đọc Âm (Bờ) ➔ Im lặng ngưng đúng 2 giây (không hiện chữ làm bé phân tâm) ➔ Đọc Từ minh họa (Quả bóng)
+// Quy trình phát âm khi bé nhấn nút "Nghe phát âm":
+// 1. Đọc Âm (ví dụ: "Bờ")
+// 2. Tự động ngưng đúng 1 giây trong im lặng hoàn toàn (không hiện chữ)
+// 3. Sau 1 giây, đọc Từ minh họa (ví dụ: "Quả bóng") và làm sáng hình ảnh
 function playLetterSequence(index) {
   if (!soundEnabled) return;
   stopAllAudio();
@@ -161,9 +163,9 @@ function playLetterSequence(index) {
 
   // Bước 1: Phát âm chữ cái
   playAudioFile(letterAudioSrc, () => {
-    // Bước 2: Tự động ngưng 2 giây trong im lặng hoàn toàn (không hiện thông báo chữ)
+    // Bước 2: Tự động ngưng đúng 1 giây trong im lặng
     pauseTimer = setTimeout(() => {
-      // Bước 3: Sau 2 giây, phát sáng thẻ từ minh họa và đọc to từ vựng
+      // Bước 3: Sau 1 giây, phát sáng thẻ từ minh họa và đọc to từ vựng
       setWordCardSpeaking(true);
 
       playAudioFile(`audio/words/${index}.mp3`, () => {
@@ -174,8 +176,9 @@ function playLetterSequence(index) {
   }, fallbackLetterText);
 }
 
-// Cập nhật giao diện chữ cái
-function renderLetter(index, shouldSpeak = true) {
+// Cập nhật giao diện chữ cái (Mặc định KHÔNG tự động phát âm để bé tập đọc trước)
+function renderLetter(index, shouldSpeak = false) {
+  stopAllAudio();
   currentIndex = index;
   const item = VIETNAMESE_ALPHABET[index];
 
@@ -205,13 +208,14 @@ function renderLetter(index, shouldSpeak = true) {
 
     updateAlphabetPills();
 
+    // Chỉ phát âm khi được yêu cầu rõ ràng
     if (shouldSpeak) {
       playLetterSequence(index);
     }
   }, 90);
 }
 
-// Chuyển tới chữ cái tiếp theo
+// Chuyển tới chữ cái tiếp theo (KHÔNG tự phát âm để bé tự đọc trước)
 function nextLetter() {
   const orderMode = document.getElementById('order-mode').value;
 
@@ -221,17 +225,17 @@ function nextLetter() {
       shuffleArray(remainingIndices);
     }
     const nextIdx = remainingIndices.pop();
-    renderLetter(nextIdx, true);
+    renderLetter(nextIdx, false);
   } else {
     const nextIdx = (currentIndex + 1) % VIETNAMESE_ALPHABET.length;
-    renderLetter(nextIdx, true);
+    renderLetter(nextIdx, false);
   }
 }
 
-// Lùi về chữ cái trước đó
+// Lùi về chữ cái trước đó (KHÔNG tự phát âm để bé tự đọc trước)
 function prevLetter() {
   const prevIdx = (currentIndex - 1 + VIETNAMESE_ALPHABET.length) % VIETNAMESE_ALPHABET.length;
-  renderLetter(prevIdx, true);
+  renderLetter(prevIdx, false);
 }
 
 // Xáo trộn mảng
@@ -256,7 +260,7 @@ function initAlphabetGrid() {
 
     pill.addEventListener('click', (e) => {
       e.stopPropagation();
-      renderLetter(index, true);
+      renderLetter(index, false); // Chọn chữ để bé tự đọc, không tự phát âm
     });
 
     grid.appendChild(pill);
@@ -280,7 +284,7 @@ function updateAlphabetPills() {
 // Thiết lập các sự kiện tương tác
 document.addEventListener('DOMContentLoaded', () => {
   initAlphabetGrid();
-  renderLetter(0, false); // Hiển thị chữ A đầu tiên
+  renderLetter(0, false); // Hiển thị chữ A đầu tiên trong im lặng
 
   const mainArea = document.getElementById('main-area');
   const btnPrev = document.getElementById('btn-prev');
@@ -290,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const wordCard = document.getElementById('word-card');
   const voiceMode = document.getElementById('voice-mode');
 
-  // Chạm vào vùng chính để chuyển chữ tiếp theo & phát âm
+  // Chạm vào vùng chính để chuyển chữ tiếp theo (không tự phát âm để bé tự đọc trước)
   mainArea.addEventListener('click', (e) => {
     if (e.target.closest('#btn-prev') || 
         e.target.closest('#btn-next') || 
@@ -334,13 +338,13 @@ document.addEventListener('DOMContentLoaded', () => {
     nextLetter();
   });
 
-  // Nút nghe lại cả quy trình (Âm ➔ Ngưng 2s ➔ Từ minh họa)
+  // CHỈ phát âm thanh ("Bờ" -> ngưng 1s -> "Quả bóng") khi bé nhấn nút "Nghe phát âm"
   btnSpeak.addEventListener('click', (e) => {
     e.stopPropagation();
     playLetterSequence(currentIndex);
   });
 
-  // Chạm trực tiếp vào hình minh họa hoặc từ để nghe đọc từ ngay lập tức
+  // Chạm trực tiếp vào hình minh họa hoặc từ để nghe đọc riêng từ minh họa
   wordCard.addEventListener('click', (e) => {
     e.stopPropagation();
     playWordOnly(currentIndex);
@@ -353,7 +357,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (soundEnabled) {
       btnSound.classList.remove('muted');
       btnSound.querySelector('.btn-icon').textContent = '🔊';
-      playLetterSequence(currentIndex);
     } else {
       btnSound.classList.add('muted');
       btnSound.querySelector('.btn-icon').textContent = '🔇';
@@ -367,20 +370,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const mode = voiceMode.value;
     let label = (mode === 'name') ? `Tên: ${item.name}` : `Âm: ${item.phonics}`;
     document.getElementById('pronounce-tag').textContent = label;
-    playLetterSequence(currentIndex);
   });
 
   // Phím tắt bàn phím
   document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'SELECT') return;
 
-    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+    if (e.key === 'ArrowRight') {
       e.preventDefault();
       nextLetter();
     } else if (e.key === 'ArrowLeft') {
       e.preventDefault();
       prevLetter();
-    } else if (e.key.toLowerCase() === 'r') {
+    } else if (e.key === ' ' || e.key === 'Enter' || e.key.toLowerCase() === 'r') {
+      // Phím cách hoặc Enter hoặc R để kích hoạt "Nghe phát âm"
       e.preventDefault();
       playLetterSequence(currentIndex);
     } else if (e.key.toLowerCase() === 'w') {
